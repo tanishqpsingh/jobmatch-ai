@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     # Google Gemini — MUST be set via environment variable; no default
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-1.5-pro"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # JWT / Auth — MUST be overridden via environment variable in production
     # Generate with: python -c "import secrets; print(secrets.token_hex(32))"

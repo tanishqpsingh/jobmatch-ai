@@ -66,7 +66,7 @@ JobMatch AI is a production-grade, full-stack career acceleration platform that 
 | **Frontend** | Next.js (App Router, Standalone), React 19, TypeScript, Tailwind CSS |
 | **Backend** | Python 3.11, FastAPI, Uvicorn, Pydantic v2 |
 | **Database & ORM** | PostgreSQL, SQLAlchemy 2.0, Psycopg2-binary, Alembic, SQLite (dev/test fallback) |
-| **AI Integration** | Google Gemini API (`google-genai`), Gemini 1.5 Pro |
+| **AI Integration** | Google Gemini API (`google-genai`), Gemini 2.5 Flash |
 | **Document Processing** | PyMuPDF (fitz), python-docx |
 | **Testing** | pytest, pytest-asyncio, HTTPX TestClient |
 | **DevOps & Hosting** | Docker (Multi-stage builds), Railway |
@@ -241,7 +241,7 @@ jobmatch-ai/
 
 - **Backend Engineering**: Clean separation of concerns across API routers, Pydantic schemas, and modular service layers. Dynamic ASGI startup conforms to cloud-native platforms.
 - **Frontend Engineering**: Built on Next.js 16 App Router using React 19 and Tailwind CSS. Utilizes standalone build output for lightweight production container images.
-- **AI System Design**: Grounded Gemini 1.5 Pro prompt engineering prevents hallucinations and maintains strict factual integrity across resume improvements.
+- **AI System Design**: Grounded Gemini 2.5 Flash prompt engineering prevents hallucinations and maintains strict factual integrity across resume improvements.
 - **Database Architecture**: Resilient database lifecycle using SQLAlchemy 2.0 and Alembic. Safe schema migrations prevent catastrophic data loss on existing records.
 - **Security Engineering**: Defense-in-depth model featuring Argon2 password hashing, HttpOnly cookie authentication, strict CORS origins, and file validation.
 - **Testing & Quality Assurance**: 75 comprehensive tests covering all critical paths with zero network dependencies.

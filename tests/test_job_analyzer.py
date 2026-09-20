@@ -37,7 +37,7 @@ def test_analyze_job_valid_success(mock_genai_client, mock_get_settings):
     # Mock settings to provide a dummy API key
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_mock_api_key_12345"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     # Mock Gemini response object
@@ -95,7 +95,7 @@ def test_analyze_job_oversized_description():
 def test_analyze_job_optional_company(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_mock_api_key_12345"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     mock_payload_no_company = dict(SAMPLE_MOCK_GEMINI_PAYLOAD)
@@ -124,7 +124,7 @@ def test_analyze_job_optional_company(mock_genai_client, mock_get_settings):
 def test_analyze_job_optional_job_title(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_mock_api_key_12345"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     mock_payload_no_title = dict(SAMPLE_MOCK_GEMINI_PAYLOAD)
@@ -153,7 +153,7 @@ def test_analyze_job_optional_job_title(mock_genai_client, mock_get_settings):
 def test_analyze_job_structured_schema(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_mock_api_key_12345"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     mock_response = MagicMock()
@@ -181,7 +181,7 @@ def test_analyze_job_structured_schema(mock_genai_client, mock_get_settings):
 def test_analyze_job_malformed_gemini_json(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_mock_api_key_12345"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     # Response is not valid JSON
@@ -204,7 +204,7 @@ def test_analyze_job_malformed_gemini_json(mock_genai_client, mock_get_settings)
 def test_analyze_job_gemini_api_exception(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_mock_api_key_12345"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     # Mock client throwing an unexpected exception (e.g. connection reset or internal error)

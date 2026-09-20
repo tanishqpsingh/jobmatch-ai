@@ -246,7 +246,7 @@ def test_matching_invalid_structure():
 def test_matching_ai_explanation_success(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_key_123"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     mock_response = MagicMock()

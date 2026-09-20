@@ -13,7 +13,7 @@ client = TestClient(app)
 def test_improve_bullet_success(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_api_key_123"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     mock_resp = MagicMock()
@@ -41,7 +41,7 @@ def test_improve_bullet_success(mock_genai_client, mock_get_settings):
 def test_explain_skill_success(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_api_key_123"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     mock_resp = MagicMock()
@@ -69,7 +69,7 @@ def test_explain_skill_success(mock_genai_client, mock_get_settings):
 def test_interview_questions_success(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_api_key_123"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     mock_resp = MagicMock()
@@ -99,7 +99,7 @@ def test_interview_questions_success(mock_genai_client, mock_get_settings):
 def test_interview_prep_success(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_api_key_123"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     mock_resp = MagicMock()
@@ -127,7 +127,7 @@ def test_interview_prep_success(mock_genai_client, mock_get_settings):
 def test_explain_technology_success(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_api_key_123"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     mock_resp = MagicMock()
@@ -155,7 +155,7 @@ def test_explain_technology_success(mock_genai_client, mock_get_settings):
 def test_study_plan_success(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_api_key_123"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     mock_resp = MagicMock()
@@ -231,7 +231,7 @@ def test_career_validation_errors():
 def test_career_prompt_injection_shield(mock_genai_client, mock_get_settings):
     mock_settings = MagicMock()
     mock_settings.GEMINI_API_KEY = "dummy_api_key_123"
-    mock_settings.GEMINI_MODEL = "gemini-1.5-pro"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
     mock_get_settings.return_value = mock_settings
 
     mock_resp = MagicMock()
