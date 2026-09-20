@@ -1,0 +1,13 @@
+{
+  "pythonPath": "C:/Users/tanis/jobmatch-ai/.venv/Scripts/python.exe",
+  "pythonVersion": "3.11",
+  "pythonPlatform": "Windows",
+  "include": [
+    "backend",
+    "tests"
+  ],
+  "exclude": [
+    "frontend",
+    "**/__pycache__"
+  ]
+}
