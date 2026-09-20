@@ -1,5 +1,5 @@
-from typing import List, Optional
-from pydantic import BaseModel, Field, field_validator
+from typing import Any, List, Optional
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # --- 1. Bullet Improvement ---
@@ -95,12 +95,77 @@ class InterviewPrepRequest(BaseModel):
 class InterviewPrepResponse(BaseModel):
     """Response payload containing job-specific interview prep guide."""
 
-    job_title: str = Field(..., description="Target job title")
+    job_title: str = Field(default="", description="Target job title")
     revision_topics: List[str] = Field(default_factory=list, description="Core technical topics to revise")
     technical_focus_areas: List[str] = Field(default_factory=list, description="Likely technical evaluation areas")
     resume_questions: List[str] = Field(default_factory=list, description="Questions likely asked about experience")
     practice_questions: List[str] = Field(default_factory=list, description="Suggested technical and role practice questions")
-    prep_strategy: str = Field(..., description="Strategic interview preparation summary")
+    prep_strategy: str = Field(default="", description="Strategic interview preparation summary")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_prep_data(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        # 1. Job title fallback to common aliases
+        if not data.get("job_title"):
+            data["job_title"] = data.get("title") or data.get("role") or ""
+
+        # 2. Strategy aliases and shape handling (string, list, or dict)
+        if not data.get("prep_strategy"):
+            data["prep_strategy"] = data.get("preparation_strategy") or data.get("strategy") or ""
+
+        strategy_val = data.get("prep_strategy")
+        if isinstance(strategy_val, list):
+            data["prep_strategy"] = "\n\n".join(str(item).strip() for item in strategy_val if str(item).strip())
+        elif isinstance(strategy_val, dict):
+            data["prep_strategy"] = "\n\n".join(
+                f"{k.replace('_', ' ').title()}: {v}" for k, v in strategy_val.items() if v
+            )
+        elif strategy_val is not None:
+            data["prep_strategy"] = str(strategy_val).strip()
+
+        if not data["prep_strategy"]:
+            data["prep_strategy"] = "Structured interview preparation guide based on required skills and role focus."
+
+        # 3. Normalize list-of-string fields (handling list of dicts, strings, or single string)
+        def _extract_item_string(item: Any) -> str:
+            if isinstance(item, str):
+                return item.strip()
+            if isinstance(item, dict):
+                for key in ("question", "topic", "area", "focus_area", "title", "name", "prompt", "text", "subject"):
+                    if key in item and isinstance(item[key], str) and item[key].strip():
+                        return item[key].strip()
+                if len(item) == 1:
+                    k, v = next(iter(item.items()))
+                    return f"{k}: {v}".strip()
+                for v in item.values():
+                    if isinstance(v, str) and v.strip():
+                        return v.strip()
+                return str(item)
+            if item is not None:
+                return str(item).strip()
+            return ""
+
+        def _to_string_list(val: Any) -> List[str]:
+            if not val:
+                return []
+            if isinstance(val, str):
+                return [val.strip()] if val.strip() else []
+            if isinstance(val, list):
+                res = []
+                for item in val:
+                    s = _extract_item_string(item)
+                    if s:
+                        res.append(s)
+                return res
+            return [str(val)]
+
+        for list_key in ("revision_topics", "technical_focus_areas", "resume_questions", "practice_questions"):
+            data[list_key] = _to_string_list(data.get(list_key))
+
+        return data
 
 
 # --- 5. Technology Explanation ---

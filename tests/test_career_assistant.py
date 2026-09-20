@@ -121,6 +121,77 @@ def test_interview_prep_success(mock_genai_client, mock_get_settings):
     assert res.json()["job_title"] == "Senior Backend Developer"
 
 
+@patch("backend.app.services.career_service.get_settings")
+@patch("backend.app.services.career_service.genai.Client")
+def test_interview_prep_shape_mismatch_and_objects(mock_genai_client, mock_get_settings):
+    """Test resilient handling when Gemini returns objects in list fields, list in prep_strategy, and aliases."""
+    mock_settings = MagicMock()
+    mock_settings.GEMINI_API_KEY = "dummy_api_key_123"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
+    mock_get_settings.return_value = mock_settings
+
+    mock_resp = MagicMock()
+    mock_resp.text = json.dumps({
+        # Gemini omits job_title or returns None
+        "preparation_strategy": ["Phase 1: Revise system design", "Phase 2: Practice live coding"],
+        "revision_topics": [{"topic": "FastAPI Dependency Injection"}, {"topic": "PostgreSQL Indexing"}],
+        "technical_focus_areas": [{"area": "High Throughput APIs"}, {"area": "Database Connection Pooling"}],
+        "resume_questions": [{"question": "Describe a difficult bug you solved in FastAPI.", "tip": "Use STAR format"}],
+        "practice_questions": [{"question": "How do you manage database migrations?", "category": "Databases"}],
+    })
+    mock_inst = MagicMock()
+    mock_inst.models.generate_content.return_value = mock_resp
+    mock_genai_client.return_value = mock_inst
+
+    payload = {
+        "job_title": "Senior Backend Developer",
+        "required_skills": ["Python", "FastAPI"],
+        "missing_skills": ["Kubernetes"],
+    }
+    res = client.post("/api/v1/career/interview-prep", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["job_title"] == "Senior Backend Developer"
+    assert "FastAPI Dependency Injection" in data["revision_topics"]
+    assert "High Throughput APIs" in data["technical_focus_areas"]
+    assert "Describe a difficult bug you solved in FastAPI." in data["resume_questions"]
+    assert "How do you manage database migrations?" in data["practice_questions"]
+    assert "Phase 1: Revise system design" in data["prep_strategy"]
+
+
+@patch("backend.app.services.career_service.get_settings")
+@patch("backend.app.services.career_service.genai.Client")
+def test_interview_prep_dict_strategy_and_single_string_fields(mock_genai_client, mock_get_settings):
+    """Test resilient handling when Gemini returns dict strategy and non-list string fields."""
+    mock_settings = MagicMock()
+    mock_settings.GEMINI_API_KEY = "dummy_api_key_123"
+    mock_settings.GEMINI_MODEL = "gemini-2.5-flash"
+    mock_get_settings.return_value = mock_settings
+
+    mock_resp = MagicMock()
+    mock_resp.text = json.dumps({
+        "title": "Cloud Architect",
+        "prep_strategy": {"focus": "Architecture reviews and AWS services", "practice": "Design exercises"},
+        "revision_topics": "Microservices, Event-Driven Architecture",
+        "technical_focus_areas": [{"Architecture": "Scalability"}],
+        "resume_questions": [],
+        "practice_questions": "Design a globally distributed caching layer.",
+    })
+    mock_inst = MagicMock()
+    mock_inst.models.generate_content.return_value = mock_resp
+    mock_genai_client.return_value = mock_inst
+
+    payload = {"job_title": "Cloud Architect"}
+    res = client.post("/api/v1/career/interview-prep", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["job_title"] == "Cloud Architect"
+    assert "Microservices, Event-Driven Architecture" in data["revision_topics"]
+    assert "Architecture: Scalability" in data["technical_focus_areas"]
+    assert "Design a globally distributed caching layer." in data["practice_questions"]
+    assert "Architecture reviews and AWS services" in data["prep_strategy"]
+
+
 # --- 5. Technology Explanation Test ---
 @patch("backend.app.services.career_service.get_settings")
 @patch("backend.app.services.career_service.genai.Client")

@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from typing import Any, Type, TypeVar
 from fastapi import HTTPException, status
@@ -17,6 +18,8 @@ from backend.app.schemas.career import (
 )
 
 T = TypeVar("T", bound=BaseModel)
+
+logger = logging.getLogger(__name__)
 
 CAREER_SYSTEM_INSTRUCTION = """
 You are an expert AI Career Coach and Assistant.
@@ -73,7 +76,17 @@ def _execute_gemini_json_request(prompt: str, schema_class: Type[T]) -> T:
 
     except HTTPException as http_ex:
         raise http_ex
-    except Exception:
+    except Exception as ex:
+        # Diagnostic logging for Railway logs (ensuring API key and sensitive credentials are never logged)
+        safe_msg = str(ex)
+        gemini_key = getattr(settings, "GEMINI_API_KEY", None)
+        if isinstance(gemini_key, str) and gemini_key:
+            safe_msg = safe_msg.replace(gemini_key, "[REDACTED]")
+        jwt_sec = getattr(settings, "JWT_SECRET", None)
+        if isinstance(jwt_sec, str) and jwt_sec:
+            safe_msg = safe_msg.replace(jwt_sec, "[REDACTED]")
+        logger.error("Career AI service processing failure [%s]: %s", type(ex).__name__, safe_msg)
+
         # Never leak API keys, credentials, or internal stack traces in HTTP responses
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -149,8 +162,12 @@ Generate a comprehensive job-specific interview preparation guide.
 {", ".join(request.missing_skills) if request.missing_skills else "None identified"}
 
 Return JSON with keys: "job_title", "revision_topics", "technical_focus_areas", "resume_questions", "practice_questions", "prep_strategy".
+All list fields ("revision_topics", "technical_focus_areas", "resume_questions", "practice_questions") must be JSON arrays of strings. "prep_strategy" must be a string summary.
 """
-    return _execute_gemini_json_request(prompt.strip(), InterviewPrepResponse)
+    result = _execute_gemini_json_request(prompt.strip(), InterviewPrepResponse)
+    if not result.job_title or not result.job_title.strip():
+        result.job_title = request.job_title
+    return result
 
 
 # --- 5. Technology Explanation ---
