@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { apiUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export interface UserProfile {
   id: number;
@@ -49,7 +49,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     try {
       if (!isLoginMode) {
         // 1. Register
-        const registerRes = await fetch(apiUrl("/api/v1/auth/register"), {
+        const registerRes = await apiFetch("/api/v1/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: email.trim(), password }),
@@ -66,12 +66,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       formBody.append("username", email.trim());
       formBody.append("password", password);
 
-      const loginRes = await fetch(apiUrl("/api/v1/auth/login"), {
+      const loginRes = await apiFetch("/api/v1/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
-        credentials: "include",
         body: formBody.toString(),
       });
 
@@ -81,9 +80,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       }
 
       // 3. Fetch authenticated profile
-      const meRes = await fetch(apiUrl("/api/v1/auth/me"), {
-        credentials: "include",
-      });
+      const meRes = await apiFetch("/api/v1/auth/me");
 
       if (meRes.ok) {
         const user: UserProfile = await meRes.json();

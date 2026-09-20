@@ -50,8 +50,11 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_COOKIE_NAME: str = "refresh_token"
 
     # Cookie Security Settings
-    # Use "lax" for local dev or same-site; use "none" with HTTPS for cross-subdomain deployments
-    COOKIE_SAMESITE: str = "lax"
+    # COOKIE_SAMESITE must be "none" for cross-origin deployments (e.g. frontend and backend
+    # on different Railway subdomains). SameSite=none requires Secure=true (enforced by
+    # is_cookie_secure in production). For purely same-site deployments, use "lax".
+    # Override via environment variable: COOKIE_SAMESITE=none
+    COOKIE_SAMESITE: str = "none"
     COOKIE_SECURE: Optional[bool] = None
     COOKIE_DOMAIN: Optional[str] = None
 

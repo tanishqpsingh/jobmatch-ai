@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiUrl } from "@/lib/api";
+import { apiUrl, apiFetch } from "@/lib/api";
 import ResumeUpload from "@/components/ResumeUpload";
 import JobAnalyzer from "@/components/JobAnalyzer";
 import MatchAnalyzer from "@/components/MatchAnalyzer";
@@ -31,9 +31,7 @@ export default function Home() {
 
     const checkCurrentUser = async () => {
       try {
-        const res = await fetch(apiUrl("/api/v1/auth/me"), {
-          credentials: "include",
-        });
+        const res = await apiFetch("/api/v1/auth/me");
         if (res.ok) {
           const profile: UserProfile = await res.json();
           setUser(profile);
@@ -49,10 +47,7 @@ export default function Home() {
 
   const handleLogout = async () => {
     try {
-      await fetch(apiUrl("/api/v1/auth/logout"), {
-        method: "POST",
-        credentials: "include",
-      });
+      await apiFetch("/api/v1/auth/logout", { method: "POST" });
     } finally {
       setUser(null);
     }

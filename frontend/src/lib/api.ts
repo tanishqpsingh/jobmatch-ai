@@ -19,3 +19,15 @@ export function apiUrl(path: string): string {
   const normalised = path.startsWith("/") ? path : `/${path}`;
   return `${API_BASE_URL}${normalised}`;
 }
+
+/**
+ * Centralised fetch wrapper that guarantees credentials (cookies)
+ * are always included on cross-origin requests to the backend.
+ */
+export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const url = apiUrl(path);
+  return fetch(url, {
+    ...init,
+    credentials: "include",
+  });
+}
