@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, ChangeEvent, DragEvent } from "react";
+import { apiUrl } from "@/lib/api";
 
 export interface ResumeData {
   filename: string;
@@ -84,7 +85,7 @@ export default function ResumeUpload() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/resumes/parse", {
+      const response = await fetch(apiUrl("/api/v1/resumes/parse"), {
         method: "POST",
         body: formData,
       });

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { apiUrl } from "@/lib/api";
 import { ResumeData } from "./ResumeUpload";
 import { JobAnalysisData } from "./JobAnalyzer";
 
@@ -66,7 +67,7 @@ export default function MatchAnalyzer({ sampleResume, sampleJob }: MatchAnalyzer
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/matching/analyze", {
+      const response = await fetch(apiUrl("/api/v1/matching/analyze"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

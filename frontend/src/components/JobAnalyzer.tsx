@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { apiUrl } from "@/lib/api";
 
 export interface JobAnalysisData {
   job_title: string | null;
@@ -63,7 +64,7 @@ Nice-to-Have / Preferred:
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/jobs/analyze", {
+      const response = await fetch(apiUrl("/api/v1/jobs/analyze"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

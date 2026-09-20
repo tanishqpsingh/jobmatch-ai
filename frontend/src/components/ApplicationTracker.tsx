@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api";
 
 export type ApplicationStatusType = "saved" | "applied" | "screening" | "interview" | "offer" | "rejected" | "withdrawn";
 
@@ -64,9 +65,13 @@ export default function ApplicationTracker() {
     setError(null);
     try {
       const [appsRes, summaryRes] = await Promise.all([
-        fetch("http://localhost:8000/api/v1/applications"),
-        fetch("http://localhost:8000/api/v1/applications/summary"),
+        fetch(apiUrl("/api/v1/applications"), { credentials: "include" }),
+        fetch(apiUrl("/api/v1/applications/summary"), { credentials: "include" }),
       ]);
+
+      if (appsRes.status === 401 || summaryRes.status === 401) {
+        throw new Error("Authentication required. Please sign in or create an account using the navbar button to access your application tracker.");
+      }
 
       if (!appsRes.ok || !summaryRes.ok) {
         throw new Error("Failed to load application data from server.");
@@ -142,17 +147,18 @@ export default function ApplicationTracker() {
     };
 
     try {
-      let url = "http://localhost:8000/api/v1/applications";
+      let url = apiUrl("/api/v1/applications");
       let method = "POST";
 
       if (editingApp) {
-        url = `http://localhost:8000/api/v1/applications/${editingApp.id}`;
+        url = apiUrl(`/api/v1/applications/${editingApp.id}`);
         method = "PATCH";
       }
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
 
@@ -173,9 +179,10 @@ export default function ApplicationTracker() {
 
   const handleQuickStatusChange = async (appId: number, newStatus: ApplicationStatusType) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/applications/${appId}`, {
+      const res = await fetch(apiUrl(`/api/v1/applications/${appId}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ status: newStatus }),
       });
       if (res.ok) {
@@ -190,8 +197,9 @@ export default function ApplicationTracker() {
     if (!deletingId) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/applications/${deletingId}`, {
+      const res = await fetch(apiUrl(`/api/v1/applications/${deletingId}`), {
         method: "DELETE",
+        credentials: "include",
       });
       if (res.ok) {
         setDeletingId(null);

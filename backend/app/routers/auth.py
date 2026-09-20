@@ -24,22 +24,24 @@ def _set_auth_cookies(response: Response, user_id: int) -> None:
     access_token = create_access_token(subject=user_id)
     refresh_token = create_refresh_token(subject=user_id)
 
-    # access_token cookie — short-lived (30 min), HttpOnly, SameSite=lax
+    # access_token cookie — short-lived (30 min), HttpOnly
     response.set_cookie(
         key=settings.ACCESS_TOKEN_COOKIE_NAME,
         value=access_token,
         httponly=True,
-        secure=False,          # Set True in production behind HTTPS
-        samesite="lax",
+        secure=settings.is_cookie_secure,
+        samesite=settings.COOKIE_SAMESITE,
+        domain=settings.COOKIE_DOMAIN,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
-    # refresh_token cookie — long-lived (7 days), HttpOnly, SameSite=lax
+    # refresh_token cookie — long-lived (7 days), HttpOnly
     response.set_cookie(
         key=settings.REFRESH_TOKEN_COOKIE_NAME,
         value=refresh_token,
         httponly=True,
-        secure=False,          # Set True in production behind HTTPS
-        samesite="lax",
+        secure=settings.is_cookie_secure,
+        samesite=settings.COOKIE_SAMESITE,
+        domain=settings.COOKIE_DOMAIN,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
     )
 
@@ -110,12 +112,16 @@ def logout(response: Response) -> dict:
     response.delete_cookie(
         key=settings.ACCESS_TOKEN_COOKIE_NAME,
         httponly=True,
-        samesite="lax",
+        secure=settings.is_cookie_secure,
+        samesite=settings.COOKIE_SAMESITE,
+        domain=settings.COOKIE_DOMAIN,
     )
     response.delete_cookie(
         key=settings.REFRESH_TOKEN_COOKIE_NAME,
         httponly=True,
-        samesite="lax",
+        secure=settings.is_cookie_secure,
+        samesite=settings.COOKIE_SAMESITE,
+        domain=settings.COOKIE_DOMAIN,
     )
     return {"detail": "Successfully logged out"}
 

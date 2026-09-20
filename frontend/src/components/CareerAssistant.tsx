@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { apiUrl } from "@/lib/api";
 
 type SubTool = "bullet" | "skill" | "questions" | "prep" | "tech" | "study";
 
@@ -46,7 +47,7 @@ export default function CareerAssistant() {
     setResultData(null);
 
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/career/${endpoint}`, {
+      const res = await fetch(apiUrl(`/api/v1/career/${endpoint}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

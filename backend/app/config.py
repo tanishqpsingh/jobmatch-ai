@@ -1,6 +1,6 @@
+import os
 from functools import lru_cache
-from typing import List
-# pyrefly: ignore [missing-import]
+from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,15 +9,17 @@ class Settings(BaseSettings):
 
     # Application settings
     APP_NAME: str = "JobMatch AI API"
-    ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    ENVIRONMENT: str = "development"    # "development" | "production"
+    DEBUG: bool = False                 # Never True in production
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # CORS settings
+    # CORS — comma-separated origins in env, e.g.:
+    #   CORS_ORIGINS=http://localhost:3000,https://your-frontend.railway.app
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
-    # Database settings
+    # Database — Railway injects DATABASE_URL automatically for linked Postgres service.
+    # Local dev falls back to SQLite if this points at PostgreSQL without a running server.
     POSTGRES_USER: str = "jobmatch_user"
     POSTGRES_PASSWORD: str = "jobmatch_password"
     POSTGRES_DB: str = "jobmatch_db"
@@ -34,15 +36,31 @@ class Settings(BaseSettings):
         "application/octet-stream",  # Fallback for some browsers/clients
     ]
 
-    # Gemini AI Settings
+    # Google Gemini — MUST be set via environment variable; no default
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-1.5-pro"
-    JWT_SECRET: str = "supersecretjwtkey"
+
+    # JWT / Auth — MUST be overridden via environment variable in production
+    # Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+    JWT_SECRET: str = "change-me-in-production-use-a-long-random-secret"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ACCESS_TOKEN_COOKIE_NAME: str = "access_token"
     REFRESH_TOKEN_COOKIE_NAME: str = "refresh_token"
+
+    # Cookie Security Settings
+    # Use "lax" for local dev or same-site; use "none" with HTTPS for cross-subdomain deployments
+    COOKIE_SAMESITE: str = "lax"
+    COOKIE_SECURE: Optional[bool] = None
+    COOKIE_DOMAIN: Optional[str] = None
+
+    @property
+    def is_cookie_secure(self) -> bool:
+        """Enforce secure HTTPS-only cookies in production unless explicitly overridden."""
+        if self.COOKIE_SECURE is not None:
+            return self.COOKIE_SECURE
+        return self.ENVIRONMENT == "production"
 
     model_config = SettingsConfigDict(
         env_file=".env",

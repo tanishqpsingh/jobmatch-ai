@@ -1,20 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api";
 import ResumeUpload from "@/components/ResumeUpload";
 import JobAnalyzer from "@/components/JobAnalyzer";
 import MatchAnalyzer from "@/components/MatchAnalyzer";
 import ApplicationTracker from "@/components/ApplicationTracker";
 import CareerAssistant from "@/components/CareerAssistant";
+import AuthModal, { UserProfile } from "@/components/AuthModal";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"resume" | "job" | "matching" | "tracker" | "career">("career");
   const [healthStatus, setHealthStatus] = useState<"checking" | "online" | "offline">("checking");
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     const checkBackend = async () => {
       try {
-        const res = await fetch("http://localhost:8000/health");
+        const res = await fetch(apiUrl("/health"));
         if (res.ok) {
           setHealthStatus("online");
         } else {
@@ -24,8 +28,35 @@ export default function Home() {
         setHealthStatus("offline");
       }
     };
+
+    const checkCurrentUser = async () => {
+      try {
+        const res = await fetch(apiUrl("/api/v1/auth/me"), {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const profile: UserProfile = await res.json();
+          setUser(profile);
+        }
+      } catch (err) {
+        // Unauthenticated visitor
+      }
+    };
+
     checkBackend();
+    checkCurrentUser();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch(apiUrl("/api/v1/auth/logout"), {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      setUser(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
@@ -41,17 +72,39 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
-              Phase 6 Active
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-950/60 text-emerald-400 border border-emerald-800/60">
+              Production Ready
             </span>
             <div className="flex items-center space-x-2 text-xs">
               <span className={`w-2.5 h-2.5 rounded-full ${healthStatus === "online" ? "bg-emerald-400 animate-pulse" : healthStatus === "offline" ? "bg-rose-500" : "bg-amber-400 animate-ping"}`} />
               <span className="text-slate-400">
-                Backend: <span className={healthStatus === "online" ? "text-emerald-400 font-semibold" : healthStatus === "offline" ? "text-rose-400 font-semibold" : "text-amber-400"}>
-                  {healthStatus === "online" ? "Online" : healthStatus === "offline" ? "Offline" : "Checking..."}
+                API: <span className={healthStatus === "online" ? "text-emerald-400 font-semibold" : healthStatus === "offline" ? "text-rose-400 font-semibold" : "text-amber-400"}>
+                  {healthStatus === "online" ? "Online" : healthStatus === "offline" ? "Offline" : "Connecting..."}
                 </span>
               </span>
             </div>
+
+            {/* Auth Action */}
+            {user ? (
+              <div className="flex items-center space-x-3 pl-2 border-l border-slate-800">
+                <span className="text-xs text-slate-300 font-medium hidden sm:inline">
+                  {user.email}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/30 transition"
+              >
+                Sign In
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -176,9 +229,16 @@ export default function Home() {
         )}
       </main>
 
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={(profile) => setUser(profile)}
+      />
+
       {/* Footer */}
       <footer className="border-t border-slate-800/80 py-8 text-center text-xs text-slate-500">
-        JobMatch AI — Phase 6: AI Career Assistant
+        JobMatch AI — Full-Stack Production Platform
       </footer>
     </div>
   );

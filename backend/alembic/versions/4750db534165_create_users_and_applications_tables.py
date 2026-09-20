@@ -21,99 +21,140 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """
-    Add users table and user_id (NOT NULL, FK -> users.id) to applications.
+    Ensure users and applications tables exist with proper schema and relationships.
 
-    SQLite does not support ALTER COLUMN for NOT NULL enforcement after the
-    fact, so Alembic's batch_alter_table (which recreates the table) is used.
+    HANDLES TWO SCENARIOS SAFELY:
+    1. Fresh Database (e.g. Railway PostgreSQL):
+       Creates `users` table, then creates `applications` table with all columns,
+       indexes, and foreign key constraint (user_id -> users.id).
 
-    LEGACY DATA POLICY — NO SILENT DATA DELETION:
-    If any applications exist without a valid user_id (i.e. they pre-date the
-    auth system), this migration will ABORT with a clear error rather than
-    silently deleting those records.
-
-    To migrate legacy applications to a specific owner before running this:
-
-        UPDATE applications SET user_id = <owner_user_id>
-        WHERE user_id IS NULL;
-
-    Only then re-run: alembic upgrade head
+    2. Existing Database with legacy `applications` table:
+       Adds `users` table, adds `user_id` to `applications`, validates that no
+       orphaned rows exist (refuses to delete legacy data silently), and enforces
+       NOT NULL on `user_id`.
     """
-    # -------------------------------------------------------------------
-    # 1. Create the users table (safe to re-run; CREATE TABLE IF NOT EXISTS
-    #    is handled by Alembic checking existing tables).
-    # -------------------------------------------------------------------
-    op.create_table(
-        "users",
-        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column("email", sa.String(length=255), nullable=False),
-        sa.Column("password_hash", sa.String(length=255), nullable=False),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-            nullable=False,
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-            nullable=False,
-        ),
-        sa.PrimaryKeyConstraint("id", name="pk_users"),
-        sa.UniqueConstraint("email", name="uq_users_email"),
-    )
-    op.create_index("ix_users_id", "users", ["id"], unique=False)
-    op.create_index("ix_users_email", "users", ["email"], unique=True)
-
-    # -------------------------------------------------------------------
-    # 2. Add user_id column to applications as NULLABLE first.
-    # -------------------------------------------------------------------
-    with op.batch_alter_table("applications", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("user_id", sa.Integer(), nullable=True))
-        batch_op.create_index("ix_applications_user_id", ["user_id"], unique=False)
-        batch_op.create_foreign_key(
-            "fk_applications_user_id_users",
-            "users",
-            ["user_id"],
-            ["id"],
-        )
-
-    # -------------------------------------------------------------------
-    # 3. SAFETY CHECK — refuse to proceed if legacy orphaned rows exist.
-    #    This surfaces the problem explicitly instead of silently deleting data.
-    # -------------------------------------------------------------------
     conn = op.get_bind()
-    orphaned_count = conn.execute(
-        text("SELECT COUNT(*) FROM applications WHERE user_id IS NULL")
-    ).scalar()
+    inspector = sa.inspect(conn)
+    existing_tables = inspector.get_table_names()
 
-    if orphaned_count and orphaned_count > 0:
-        raise RuntimeError(
-            f"\n\n"
-            f"  MIGRATION ABORTED — DATA LOSS PREVENTION\n"
-            f"  =========================================\n"
-            f"  Found {orphaned_count} application row(s) with no owner (user_id IS NULL).\n"
-            f"  Silently deleting existing data is not permitted.\n\n"
-            f"  To resolve, assign these rows to a valid user before re-running:\n\n"
-            f"    UPDATE applications SET user_id = <owner_user_id> WHERE user_id IS NULL;\n\n"
-            f"  Then run:  alembic upgrade head\n"
+    # -------------------------------------------------------------------
+    # 1. Create the users table if it does not exist
+    # -------------------------------------------------------------------
+    if "users" not in existing_tables:
+        op.create_table(
+            "users",
+            sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+            sa.Column("email", sa.String(length=255), nullable=False),
+            sa.Column("password_hash", sa.String(length=255), nullable=False),
+            sa.Column(
+                "created_at",
+                sa.DateTime(timezone=True),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=False,
+            ),
+            sa.Column(
+                "updated_at",
+                sa.DateTime(timezone=True),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=False,
+            ),
+            sa.PrimaryKeyConstraint("id", name="pk_users"),
+            sa.UniqueConstraint("email", name="uq_users_email"),
         )
+        op.create_index("ix_users_id", "users", ["id"], unique=False)
+        op.create_index("ix_users_email", "users", ["email"], unique=True)
 
     # -------------------------------------------------------------------
-    # 4. Enforce NOT NULL now that no orphaned rows remain.
+    # 2. Handle applications table
     # -------------------------------------------------------------------
-    with op.batch_alter_table("applications", schema=None) as batch_op:
-        batch_op.alter_column("user_id", existing_type=sa.Integer(), nullable=False)
+    if "applications" not in existing_tables:
+        # Fresh production database — create applications table directly
+        op.create_table(
+            "applications",
+            sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+            sa.Column("company", sa.String(length=200), nullable=False),
+            sa.Column("job_title", sa.String(length=200), nullable=False),
+            sa.Column("job_description", sa.Text(), nullable=True),
+            sa.Column("application_date", sa.Date(), nullable=True),
+            sa.Column("status", sa.String(length=50), nullable=False, server_default="saved"),
+            sa.Column("user_id", sa.Integer(), nullable=False),
+            sa.Column("interview_date", sa.DateTime(), nullable=True),
+            sa.Column("notes", sa.Text(), nullable=True),
+            sa.Column(
+                "created_at",
+                sa.DateTime(timezone=True),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=False,
+            ),
+            sa.Column(
+                "updated_at",
+                sa.DateTime(timezone=True),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=False,
+            ),
+            sa.PrimaryKeyConstraint("id", name="pk_applications"),
+            sa.ForeignKeyConstraint(
+                ["user_id"],
+                ["users.id"],
+                name="fk_applications_user_id_users",
+            ),
+        )
+        op.create_index("ix_applications_id", "applications", ["id"], unique=False)
+        op.create_index("ix_applications_company", "applications", ["company"], unique=False)
+        op.create_index("ix_applications_job_title", "applications", ["job_title"], unique=False)
+        op.create_index("ix_applications_status", "applications", ["status"], unique=False)
+        op.create_index("ix_applications_user_id", "applications", ["user_id"], unique=False)
+    else:
+        # Existing database: inspect columns to see if user_id migration is needed
+        columns = [c["name"] for c in inspector.get_columns("applications")]
+        if "user_id" not in columns:
+            with op.batch_alter_table("applications", schema=None) as batch_op:
+                batch_op.add_column(sa.Column("user_id", sa.Integer(), nullable=True))
+                batch_op.create_index("ix_applications_user_id", ["user_id"], unique=False)
+                batch_op.create_foreign_key(
+                    "fk_applications_user_id_users",
+                    "users",
+                    ["user_id"],
+                    ["id"],
+                )
+
+            # SAFETY CHECK — refuse to proceed if legacy orphaned rows exist
+            orphaned_count = conn.execute(
+                text("SELECT COUNT(*) FROM applications WHERE user_id IS NULL")
+            ).scalar()
+
+            if orphaned_count and orphaned_count > 0:
+                raise RuntimeError(
+                    f"\n\n"
+                    f"  MIGRATION ABORTED — DATA LOSS PREVENTION\n"
+                    f"  =========================================\n"
+                    f"  Found {orphaned_count} application row(s) with no owner (user_id IS NULL).\n"
+                    f"  Silently deleting existing data is not permitted.\n\n"
+                    f"  To resolve, assign these rows to a valid user before re-running:\n\n"
+                    f"    UPDATE applications SET user_id = <owner_user_id> WHERE user_id IS NULL;\n\n"
+                    f"  Then run:  alembic upgrade head\n"
+                )
+
+            with op.batch_alter_table("applications", schema=None) as batch_op:
+                batch_op.alter_column("user_id", existing_type=sa.Integer(), nullable=False)
 
 
 def downgrade() -> None:
-    """Remove user_id from applications and drop users table (non-destructive to app data)."""
-    with op.batch_alter_table("applications", schema=None) as batch_op:
-        batch_op.alter_column("user_id", existing_type=sa.Integer(), nullable=True)
-        batch_op.drop_constraint("fk_applications_user_id_users", type_="foreignkey")
-        batch_op.drop_index("ix_applications_user_id")
-        batch_op.drop_column("user_id")
+    """Downgrade schema safely."""
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_tables = inspector.get_table_names()
 
-    op.drop_index("ix_users_email", table_name="users")
-    op.drop_index("ix_users_id", table_name="users")
-    op.drop_table("users")
+    if "applications" in existing_tables:
+        columns = [c["name"] for c in inspector.get_columns("applications")]
+        if "user_id" in columns:
+            with op.batch_alter_table("applications", schema=None) as batch_op:
+                batch_op.alter_column("user_id", existing_type=sa.Integer(), nullable=True)
+                batch_op.drop_constraint("fk_applications_user_id_users", type_="foreignkey")
+                batch_op.drop_index("ix_applications_user_id")
+                batch_op.drop_column("user_id")
+
+    if "users" in existing_tables:
+        op.drop_index("ix_users_email", table_name="users")
+        op.drop_index("ix_users_id", table_name="users")
+        op.drop_table("users")
