@@ -6,8 +6,8 @@ JobMatch AI is a production-grade, full-stack career acceleration platform that 
 
 ## Live Demo
 
-> **Live Production URL:** `https://jobmatch-ai-frontend.up.railway.app` *(Pending Railway deployment)*
-> **API Health Probe:** `https://jobmatch-ai-backend.up.railway.app/health` *(Pending Railway deployment)*
+> **Live Production URL:** `https://extraordinary-caring-production-a1a3.up.railway.app`
+> **API Health Probe:** `https://jobmatch-ai-production-da1f.up.railway.app/health`
 
 ---
 
